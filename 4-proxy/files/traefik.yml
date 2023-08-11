@@ -1,0 +1,62 @@
+entryPoints:
+  web:
+    address: ":80"
+    forwardedHeaders:
+      trustedIPs:
+        - "127.0.0.1/32"
+        - "10.0.0.0/8"
+  web-secure:
+    address: ":443"
+    forwardedHeaders:
+      trustedIPs:
+        - "127.0.0.1/32"
+        - "10.0.0.0/8"
+  ping:
+    address: ":8082"
+
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: true
+
+
+serversTransport:
+  insecureSkipVerify: true
+  maxIdleConnsPerHost: 42
+
+api:
+  dashboard: true
+
+log:
+  level: INFO
+
+accessLog:
+  format: json
+  fields:
+    defaultMode: keep
+    names:
+      ClientUsername: keep
+    headers:
+      defaultMode: keep
+      
+
+metrics:
+  prometheus:
+    buckets:
+      - 0.1
+      - 0.3
+      - 1.2
+      - 5
+    addServicesLabels: true
+    addEntryPointsLabels: true
+    entryPoint: metrics
+
+providers:
+  file:
+    filename: /etc/traefik/routes.yml
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    swarmMode: true
+
+ping:
+  entryPoint: "ping"

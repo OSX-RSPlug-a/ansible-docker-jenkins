@@ -1,0 +1,37 @@
+- name: Jenkins Jobs
+  gather_facts: No
+  hosts: manager
+
+  tasks:
+    - include: ../config-repo/config-repo.yaml
+    - name: Permissions jobs_config folder
+      shell: mkdir -p /var/teste/jobs_config
+    
+    - name: Separa jobs config
+      shell: rm -rf /var/teste/jobs_config/* && cp -r /var/teste/config_repo/* /var/teste/jobs_config
+
+    - name: Replace createJobs.sh
+      replace:
+        path: /var/teste/jobs_config/Scripts/createJobs.sh
+        regexp: '{{ item.regexp }}'
+        replace: '{{ item.replace }}'
+      with_items:
+        - regexp: '(REPO_BRANCH)'
+          replace: "{{ config_repo_branch_name }}"
+        - regexp: '(REPO_NAME)'
+          replace: "{{ config_repo_name }}"
+        - regexp: '(PROXY_IP)'
+          replace: "{{ proxy_ip }}"
+        - regexp: '(JENKINS_USER)'
+          replace: "{{ jenkins_user }}"
+        - regexp: '(JENKINS_PASS)'
+          replace: "{{ jenkins_pass }}"
+
+    - name: make script runnable
+      shell: chmod +x /var/teste/jobs_config/Scripts/createJobs.sh 
+      become: true
+
+    - name: Create Jobs
+      shell: ./createJobs.sh >> crete-logs.txt
+      args:
+        chdir: /var/teste/jobs_config/Scripts

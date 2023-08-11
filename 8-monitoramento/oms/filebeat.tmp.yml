@@ -1,0 +1,48 @@
+filebeat.inputs:
+  - type: log
+    paths:
+    - /srv/jetty/logs/*.log
+    multiline.type: pattern
+    multiline.pattern: '^[[:space:]]+(at|\.{3})[[:space:]]+\b|^Caused by:'
+    multiline.negate: false
+    multiline.match: after
+    ignore_older: 480h
+
+processors:
+- decode_json_fields:
+    fields: [message]
+    target: ""
+    overwrite_keys: true
+- rename:
+    fields:
+    - from: package
+      to: Nome do Servico
+    - from: level
+      to: LEVEL
+    fail_on_error: false
+
+output.elasticsearch:
+  hosts: ["${DOMAIN}:443"]
+  protocol: https
+  path: "/${ELASTICSEARCH_HOST}"
+  username: ${ELASTICSEARCH_USERNAME}
+  password: ${ELASTICSEARCH_PASSWORD}
+
+setup.kibana:
+  host: "${DOMAIN}:443"
+  protocol: https
+  path: "/${KIBANA_HOST}"
+  username: ${ELASTICSEARCH_USERNAME}
+  password: ${ELASTICSEARCH_PASSWORD}
+
+setup.ilm:
+  enabled: auto
+  rollover_alias: ${ELK_INDEX_PREFIX}-filebeat
+  pattern: "{now/d}-000001"
+  policy_name: OMSPolicy
+  policy_file: /etc/filebeat/oms/oms_policy.json
+  check_exists: true
+  overwrite: false
+
+logging.json: true
+logging.metrics.enabled: false

@@ -1,0 +1,78 @@
+version: "3.7"
+
+x-logging:
+  &default-logging
+  options:
+    max-size: '100m'
+    max-file: '10'
+  driver: json-file
+
+services:
+  traefik:
+    hostname: traefik
+    image: traefik:v2.0
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+      - target: 443
+        published: 443
+        mode: host
+    networks:
+      - weavenet
+    logging: *default-logging
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    configs:
+      - source: cert_key
+        target: /etc/traefik/cert.key
+      - source: cert_crt
+        target: /etc/traefik/cert.crt
+      - source: conf
+        target: /etc/traefik/traefik.yml
+      - source: routes
+        target: /etc/traefik/routes.yml
+    healthcheck:
+      test: wget --quiet --tries=1 --spider http://traefik:8082/ping || exit 1
+      interval: 10s
+      timeout: 120s
+      start_period: 30s
+      retries: 10
+    deploy:
+      endpoint_mode: dnsrr
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 30s
+      rollback_config:
+        parallelism: 1
+        failure_action: pause
+        max_failure_ratio: 3
+      resources:
+        limits:
+          memory: 500m
+        reservations:
+          memory: 360m
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  weavenet:
+    name: weavenet
+    external: true
+
+configs:
+  cert_key:
+    name: cert_key_0
+    file: ./cert.key
+  cert_crt:
+    name: cert_crt-0
+    file: ./cert.crt
+  conf:
+    name: conf-0
+    file: ./traefik.yml
+  routes:
+    name: routes-0
+    file: ./routes.yml

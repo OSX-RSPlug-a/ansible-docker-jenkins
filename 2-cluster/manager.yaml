@@ -1,0 +1,37 @@
+- name: create manager
+  gather_facts: No
+  hosts: manager
+
+  tasks:
+    - include: ../utils/get-ip.yaml
+
+    - name: Create primary swarm manager
+      shell: docker swarm init --advertise-addr {{ ip.stdout }}
+      ignore_errors: true
+      become: true
+
+    - name: NFS persistent volume
+      shell: mkdir -p /var/teste/volumes
+
+    - name: NFS Run Service
+      shell: docker run -p 2049:2049 --restart always -d --name nfs --privileged -v /var/teste/volumes:/nfsshare -e SHARED_DIRECTORY=/nfsshare  itsthenetwork/nfs-server-alpine:latest
+      ignore_errors: true
+      become: true
+
+    - name: Create volume Root
+      shell: docker volume create --driver local --opt type=nfs --opt o=addr={{ ip.stdout }},rw,vers=4 --opt device=:/ root
+      ignore_errors: true
+      become: true
+
+- name: wso2
+  gather_facts: No
+  hosts: wso2
+
+  tasks:
+    - include: ../utils/get-ip.yaml
+
+    - name: Create primary swarm manager
+      shell: docker swarm init --advertise-addr {{ ip.stdout }}
+      ignore_errors: true
+      become: true
+    

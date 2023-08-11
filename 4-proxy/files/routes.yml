@@ -1,0 +1,66 @@
+
+http:
+  routers:
+    dash:
+      rule: "PathPrefix(`/dashboard/`) || PathPrefix(`/api/`)"
+      entryPoints:
+        - "web-secure"
+      service: api@internal
+      middlewares:
+        - compress
+      tls: {}
+    api-gateway:
+      rule: "PathPrefix(`/api-gateway/`)"
+      entryPoints:
+        - "web-secure"
+      service: "wso2-gateway"
+      priority: 1000
+      middlewares:
+        - compress
+        - stripFirstPrefix
+      tls: {}
+    apimanager:
+      rule: "Host(`WSO2_DOMAIN`)"
+      entryPoints:
+        - "web-secure"
+      service: "wso2-manager"
+      priority: 1000
+      middlewares:
+        - compress
+        - carbonDefault
+      tls: {}
+
+  services:
+    wso2-gateway:
+      loadBalancer:
+        servers:
+        - url: http://WSO2_IP:8280
+    wso2-manager:
+      loadBalancer:
+        servers:
+        - url: http://WSO2_IP:9763
+        sticky:
+          cookie:
+            name: path
+
+  middlewares:
+    redirectHttps:
+      redirectScheme:
+        scheme: https
+    compress:
+      compress: {}
+    stripFirstPrefix:
+      stripPrefixRegex:
+        regex:
+          - "/[a-z0-9-]*"
+    carbonDefault:
+      replacePathRegex:
+        regex: "^/$"
+        replacement: "/carbon"
+
+tls:
+  certificates:
+    - certFile: /etc/traefik/cert.crt
+      keyFile: /etc/traefik/cert.key
+      stores:
+        - default

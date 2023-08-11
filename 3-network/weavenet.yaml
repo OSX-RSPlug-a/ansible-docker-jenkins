@@ -1,0 +1,36 @@
+- name: Configure Weavenet
+  gather_facts: No
+  hosts: all
+
+  tasks:
+    - name: Install Weavenet plugin
+      shell: yes | docker plugin install weaveworks/net-plugin:latest_release
+      ignore_errors: true
+
+    - name: Disable Weavenet plugin
+      shell: docker plugin disable --force weaveworks/net-plugin:latest_release
+      ignore_errors: true
+
+    - name: Set Weavenet plugin
+      shell: docker plugin set weaveworks/net-plugin:latest_release IPALLOC_RANGE={{ weavenet_alloc_range }}
+      ignore_errors: true
+
+    - name: Enabled Weavenet plugin
+      shell: docker plugin enable weaveworks/net-plugin:latest_release
+      ignore_errors: true
+
+- name: Create manager network
+  gather_facts: No
+  hosts: manager
+  tasks:
+    - name: Create Weavenet network
+      shell: docker network create --driver=weaveworks/net-plugin:latest_release --attachable --subnet {{ weavenet_network_cidr }} --gateway {{ weavenet_gateway }} weavenet
+      ignore_errors: true
+
+- name: Create wso2 network
+  gather_facts: No
+  hosts: wso2
+  tasks:
+    - name: Create Weavenet network
+      shell: docker network create --driver=weaveworks/net-plugin:latest_release --attachable --subnet {{ weavenet_network_cidr }} --gateway {{ weavenet_gateway }} weavenet
+      ignore_errors: true

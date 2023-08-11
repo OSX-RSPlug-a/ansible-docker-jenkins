@@ -1,0 +1,28 @@
+- name: publish apis on wso2
+  gather_facts: No
+  hosts: wso2
+  tasks:
+    - include: ../config-repo/config-repo.yaml
+
+    - name: Permissions wso2_config folder
+      shell: mkdir -p /var/teste/wso2_api_publish/apis
+
+    - name: Repository Proxy
+      copy:
+        src: ./files/
+        dest: /var/teste/wso2_api_publish
+
+    - name: Busca as definições de api
+      shell:
+        cmd: |
+          rm -rf /var/teste/wso2_api_publish/apis/*
+          cp -r /var/teste/config_repo/WSO2_API_Manager/api-publisher/apis/rest/* /var/teste/wso2_api_publish/apis/
+
+    - name: faz script ser executavel
+      shell: chmod +x /var/teste/wso2_api_publish/wso2-publish
+      become: true
+
+    - name: publish apis
+      shell: ./wso2-publish -consumerKey={{wso2_client_id}} -consumerSecret={{wso2_client_secret}} -usuario=admin -senha={{wso2_admin_pass}} >> publish-logs.txt
+      args:
+        chdir: /var/teste/wso2_api_publish

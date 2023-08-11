@@ -1,0 +1,47 @@
+- name: remove wso2
+  gather_facts: No
+  hosts: wso2
+
+  tasks:
+    - name: stop wso2
+      shell: service stop wso2
+      become: true 
+
+    - name: disable wso2
+      shell: systemctl disable wso2
+      become: true
+      
+    - name: Remove WSO2 directory
+      file:
+        path: /var/teste/wso2
+        state: absent
+      ignore_errors: yes
+      become: true
+
+    - name: Java exists
+      stat:
+        path: /usr/java/jdk1.8.0_141
+      register: java_exists
+      become: true
+
+    - name: Remove Java directory
+      file:
+        path: /usr/java/jdk1.8.0_141
+        state: absent
+      when: java_exists.stat.exists
+      become: true
+
+    - name: remove stack
+      shell: docker stack rm apim
+
+    - name: Remove mysql volume
+      shell: "docker volume rm {{ environment_name }}-mysql-data"
+      delegate_to: manager
+      become: true
+      ignore_errors: yes
+      
+    - name: Remove mysql volume data
+      shell: "rm -rf /var/teste/volumes/{{ environment_name }}-mysql-data"
+      delegate_to: manager
+      become: true
+      ignore_errors: yes

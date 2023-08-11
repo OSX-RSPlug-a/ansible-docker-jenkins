@@ -1,0 +1,15 @@
+- name: Create manager network
+  gather_facts: No
+  hosts: manager
+  tasks:
+    - name: Create Weavenet network
+      shell: docker network create --driver=overlay weavenet
+      ignore_errors: true
+
+- name: Create wso2 network
+  gather_facts: No
+  hosts: wso2
+  tasks:
+    - name: Create Weavenet network
+      shell: docker network create --driver=overlay weavenet
+      ignore_errors: true

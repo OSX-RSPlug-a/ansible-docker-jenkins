@@ -1,0 +1,16 @@
+- name: Proxy
+  gather_facts: No
+  hosts: manager
+
+  tasks:     
+    - name: Permissions health folder
+      shell: mkdir -p /var/teste/volumes/healthcheck
+
+    - name: Repository Proxy
+      copy:
+        src: ./files/
+        dest: /var/teste/volumes/healthcheck
+
+    - name: Mkae executable
+      shell: chmod +x /var/teste/volumes/healthcheck/hc && chmod +x /var/teste/volumes/healthcheck/health_check
+      become: true

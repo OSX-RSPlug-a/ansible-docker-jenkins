@@ -1,0 +1,22 @@
+- name: config wso2
+  gather_facts: No
+  hosts: wso2
+  become: true
+
+
+  tasks:
+    - name: JDK Directory
+      file:
+        path: /usr/java/jdk1.8.0_141/
+        state: directory
+        mode: "0754"
+      
+    - name: Download Java JDK
+      get_url:
+        url: "http://download.oracle.com/otn-pub/java/jdk/8u141-b15/336fa29ff2bb4ef291e347e091f7f4a7/jdk-8u141-linux-x64.tar.gz"
+        dest: /tmp/jdk-8u141-linux-x64.tar.gz
+        headers: 
+          Cookie: oraclelicense=accept-securebackup-cookie
+
+    - name: Install Java JDK
+      shell: "cd /tmp && tar -xvzf /tmp/jdk-8u141-linux-x64.tar.gz && cp -r /tmp/jdk1.8.0_141/* /usr/java/jdk1.8.0_141/ && rm -rf /tmp/jdk1.8.0_141/"

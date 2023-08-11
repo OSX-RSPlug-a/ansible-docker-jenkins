@@ -1,0 +1,153 @@
+version: "3.7"
+
+x-logging:
+  &default-logging
+  options:
+    max-size: '100m'
+    max-file: '10'
+  driver: json-file
+
+
+services:
+  jenkins:
+    image: testedeploy/jenkins:fit
+    user: root
+    logging: *default-logging
+    environment:
+      JENKINS_OPTS: "--prefix=/ci --handlerCountMax=300 --webroot=/var/cache/jenkins/war"
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+      JVM_ARGS: "-Xmx1024m -XX:MaxPermSize=256m"
+    secrets:
+      - jenkins-user
+      - jenkins-pass
+      - repo_user
+      - repo_pass
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - jenkins-war:/var/cache/jenkins/war
+    configs:
+      - source: groovy_create_credentials
+        target: /usr/share/jenkins/ref/init.groovy.d/create-credential.groovy 
+      - source: groovy_template_credentials
+        target: /usr/share/jenkins/ref/init.groovy.d/template_credentials.json
+    networks:
+      - weavenet
+    healthcheck:
+      test: ["CMD", "nc", "-z","localhost", "8080"]
+      interval: 10s
+      timeout: 120s
+      start_period: 400s
+      retries: 10
+    deploy:
+      endpoint_mode: dnsrr
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 30s
+      rollback_config:
+        parallelism: 1
+        failure_action: pause
+        max_failure_ratio: 3
+        order: stop-first
+      update_config:
+        parallelism: 2
+        delay: 20s
+        order: stop-first
+      resources:
+        limits:
+          memory: 1024MB
+        reservations:
+          memory: 512MB
+      labels:
+        - "traefik.enable=true"
+        #server
+        - "traefik.http.services.jenkins-service.loadbalancer.server.port=8080"
+        #https
+        - "traefik.http.routers.jenkins.rule=PathPrefix(`/ci/`) || Path(`/ci`)"
+        - "traefik.http.routers.jenkins.entrypoints=web-secure"
+        - "traefik.http.routers.jenkins.middlewares=compress@file"
+        - "traefik.http.routers.jenkins.tls=true"
+      placement:
+        constraints:
+          - node.role != manager
+
+  jenkins-agent:
+    image: testedeploy/jenkins-agent:v3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp:/tmp
+    environment:
+      HOSTNAME: http://jenkins:8080/ci
+      EXECUTORS: 5
+    secrets:
+      - jenkins-pass
+    networks:
+      - weavenet
+    healthcheck:
+      test: ["CMD", "nc", "-z","jenkins", "8080"]
+      interval: 10s
+      timeout: 120s
+      start_period: 100s
+      retries: 10
+    logging: *default-logging
+    deploy:
+      endpoint_mode: dnsrr
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 30s
+      rollback_config:
+        parallelism: 1
+        failure_action: pause
+        max_failure_ratio: 3
+        order: start-first
+      update_config:
+        parallelism: 2
+        delay: 20s
+        order: start-first
+      replicas: 2
+      resources:
+        reservations:
+          cpus: '0.1'
+          memory: 400M
+        limits:
+          cpus: '1'
+          memory: 500M
+      placement:
+        constraints:
+          - node.role == manager
+
+secrets:
+  jenkins-user:
+    external: true
+  jenkins-pass:
+    external: true
+  repo_user:
+    external: true
+  repo_pass:
+    external: true
+
+volumes:
+  jenkins-war:
+  jenkins-home:
+    name: jenkins-home
+    driver_opts:
+      type: "nfs"
+      o: addr=IPNFS,rw,vers=4
+      device: ":/jenkins"
+
+networks:
+  weavenet:
+    name: weavenet
+    external: true
+
+
+configs:
+  groovy_create_credentials:
+    name: groovy_create_credentials_0
+    file: ./create-credential.groovy
+  groovy_template_credentials:
+    name: groovy_template_credentials_0
+    file: ./template_credentials.json

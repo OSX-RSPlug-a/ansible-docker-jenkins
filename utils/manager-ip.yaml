@@ -1,0 +1,4 @@
+- name: Get manager IP
+  shell: hostname -I | awk '{print $1}'
+  register: manager_ip
+  delegate_to: manager

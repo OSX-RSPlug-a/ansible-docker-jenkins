@@ -1,0 +1,10 @@
+- name: Remove Proxy
+  gather_facts: No
+  hosts: manager
+
+  tasks:
+    - name: removev proxy folder
+      shell: rm -rf /var/teste/proxy
+      
+    - name: Proxy Docker Compose
+      shell: docker stack rm reverse_proxy

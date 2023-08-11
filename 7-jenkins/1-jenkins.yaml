@@ -1,0 +1,50 @@
+- name: Jenkins
+  gather_facts: No
+  hosts: manager
+
+  tasks:
+    - name: Permission Jenkins folder
+      shell: mkdir -p /var/teste/jenkins
+
+    - name: write credentials to file
+      copy: 
+        content: "{{ jenkins_credentials | to_nice_json }}" 
+        dest: /var/teste/jenkins/template_credentials.json
+
+    - name: Repository Jenkins
+      copy:
+        src: ./files/
+        dest: /var/teste/jenkins
+
+    - name: Jenkins User with Secret
+      shell: echo {{ jenkins_user }} | docker secret create jenkins-user -
+      ignore_errors: True
+
+    - name: Jenkins Pass with Secret
+      shell: echo {{ jenkins_pass }} | docker secret create jenkins-pass -
+      ignore_errors: True
+
+    - name: Jenkins Repo User with Secret
+      shell: echo {{ jenkins_repo_user }} | docker secret create repo_user -
+      ignore_errors: True
+
+    - name: Jenkins Repo Pass with Secret
+      shell: echo {{ jenkins_repo_pass }} | docker secret create repo_pass -
+      ignore_errors: True
+
+    - name: Run Busybox mkdir
+      shell: docker run --rm -v root:/rootDir busybox mkdir /rootDir/jenkins
+      ignore_errors: True
+
+    - name: Jenkins NFS Volume
+      shell: docker volume create --driver local --opt type=nfs --opt o=addr={{ nfs_ip }},rw,vers=4 --opt device=:/jenkins jenkins-home
+      ignore_errors: True
+
+    - name: Replace NFS docker-compose
+      replace:
+        path: /var/teste/jenkins/docker-compose.yaml
+        regexp: '(IPNFS)'
+        replace: "{{ nfs_ip }}"
+
+    - name: Jenkins Docker Compose
+      shell: docker stack deploy -c /var/teste/jenkins/docker-compose.yaml jenkins

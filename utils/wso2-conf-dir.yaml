@@ -1,0 +1,5 @@
+- name: Permissions wso2_config folder
+  shell: mkdir -p /var/teste/wso2_config
+
+- name: Separa wso2 config
+  shell: rm -rf /var/teste/wso2_config/* && cp -r /var/teste/config_repo/WSO2_API_Manager/wso2/* /var/teste/wso2_config

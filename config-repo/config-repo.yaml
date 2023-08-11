@@ -1,0 +1,41 @@
+- name: Get ssh user
+  command: whoami
+  changed_when: false
+  become: false
+  register: whoami
+
+- name: Permissions secret folder
+  shell: mkdir -p /var/teste/secrets
+
+- name: Clean secret repo
+  shell: rm -rf  /var/teste/secrets/*
+  become: true
+
+- name: Repository secrets
+  copy:
+    src: ./files/
+    dest: /var/teste/secrets
+
+- name: fix key permissions
+  shell: chmod 600 /var/teste/secrets/bitbucket_cred
+  become: true
+
+- name: fix key permissions
+  shell: chmod 644 /var/teste/secrets/bitbucket_cred.pub
+  become: true
+
+- name: Clean config_repo
+  shell: rm -rf  /var/teste/config_repo
+  become: true
+
+- name: Clone git repo
+  git:
+    accept_hostkey: yes
+    repo: "https://deploy-cadastro:0000000000000000000@bitbucket.org/testelab/{{ config_repo_name }}.git"
+    version: "{{ config_repo_branch_name }}"
+    dest: /var/teste/config_repo
+    key_file: /var/teste/secrets/bitbucket_cred
+
+- name: Clean secret repo
+  shell: rm -rf  /var/teste/secrets/*
+  become: true

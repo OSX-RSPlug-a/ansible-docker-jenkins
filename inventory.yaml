@@ -1,0 +1,160 @@
+all:
+  children:
+    cluster:
+      children:
+        manager:
+          hosts:
+            manager:
+              ansible_host: 0.0.0.0
+        worker:
+          hosts:
+            worker1:
+              ansible_host: 0.0.0.0
+            worker2:
+              ansible_host: 0.0.0.0
+            worker3:
+              ansible_host: 0.0.0.0
+    baremetal:
+      hosts:
+        wso2:
+          ansible_host: 0.0.0.0
+          elk_prefix_rollover_alias: wso2
+
+  vars:
+    environment_name: project
+    jenkins_user: admin
+    jenkins_pass: admin
+    jenkins_repo_user: deploy-cadastro
+    jenkins_repo_pass: admin#098765!
+    rabbitmq_user: teste
+    rabbitmq_pass: teste*23
+    elk_password: teste*23
+    grafana_user: teste
+    grafana_pass: teste*23
+    smtp_email: alerta@testetech.com
+    smtp_pass: C3dr0us3R
+    adm_portainer_pass: teste*23
+    wso2_integrator_pass: teste*23
+    internal_cidr: "10.128.0.0/16"
+    teste_cidr: "10.1.0.0/16"
+    docker_dns: ["8.8.8.8"]
+    config_repo_name: repo_deployment_configs
+    config_repo_branch_name: release
+    domain: repo.teste.com
+    wso2_domain: wso2-repo.teste.com
+    # esses ips nunca devem conflitar com os ips internos das maquinas. pois isso fara com que a rede entre em conflito
+    weavenet_alloc_range: 11.199.0.0/16
+    weavenet_network_cidr: 13.0.0.0/24
+    weavenet_gateway: 13.0.0.1
+    wso2_admin_pass:  admin
+    wso2_client_id: admin#098765!
+    wso2_client_secret: admin#098765!
+    wso2_ip: 10.128.0.25
+    nfs_ip: 10.128.0.28
+    proxy_ip: 10.128.0.28
+    dockerhub_login: testedeploy
+    dockerhub_password: admin#098765!
+    health_check_volume_name: healthcheck
+    sql_server_host: sql_server
+    sa_password: teste*23
+
+    jenkins_credentials:
+      - name: sa_password
+        value: "{{ sa_password }}"
+        desc: "sa_password:"
+
+      - name: api_domain
+        value: "{{ domain }}"
+        desc: "api_domain: {{ domain }}"
+
+      - name: dockerhub_login
+        value: "{{ dockerhub_login }}"
+        desc: "dockerhublogin: {{ dockerhub_login }}"
+
+      - name: dockerhub_password
+        value: "{{ dockerhub_password }}"
+        desc: dockerhub_password
+
+      - name: environment_name
+        value: "{{ environment_name }}"
+        desc: "environment_name: {{ environment_name }}"
+
+      - name: nfs_ip
+        value: "{{ nfs_ip }}"
+        desc: "nfs_ip: {{ nfs_ip }}"
+
+      - name: proxy_ip
+        value: "{{ proxy_ip }}"
+        desc: "proxy_ip: {{ proxy_ip }}"
+
+      - name: wso2_client_secret
+        value: "{{ wso2_client_secret }}"
+        desc: "wso2_client_secret: {{ wso2_client_secret }}"
+
+      - name: wso2_client_id
+        value: "{{ wso2_client_id }}"
+        desc: "wso2_client_id: {{ wso2_client_id }}"
+
+      - name: wso2_domain
+        value: "{{ wso2_domain }}"
+        desc: "wso2_domain: {{ wso2_domain }}"
+
+      - name: wso2_ip
+        value: "{{wso2_ip}}"
+        desc: "wso2_ip: {{wso2_ip}}"
+
+      - name: health_check_volume_name
+        value: "{{health_check_volume_name}}"
+        desc: "health_check_volume_name: {{health_check_volume_name}}"
+
+      - name: internal_proxy_ip
+        value: "{{ proxy_ip }}"
+        desc: "internal_proxy_ip: {{ proxy_ip }}"
+
+      - name: rabbitmq_user
+        value: "{{ rabbitmq_user }}"
+        desc: "rabbitmq_user: {{ rabbitmq_user }}"
+
+      - name: rabbitmq_pass
+        value: "{{ rabbitmq_pass }}"
+        desc: "rabbitmq_pass: {{ rabbitmq_pass }}"
+
+      - name: elk_password
+        value: "{{ elk_password }}"
+        desc: "elk_password: {{ elk_password }}"
+
+      - name: grafana_user
+        value: "{{ grafana_user }}"
+        desc: "grafana_user: {{ grafana_user }}"
+
+      - name: grafana_pass
+        value: "{{ grafana_pass }}"
+        desc: "grafana_pass: {{ grafana_pass }}"
+
+      - name: smtp_email
+        value: "{{ smtp_email }}"
+        desc: "smtp_email: {{ smtp_email }}"
+
+      - name: smtp_pass
+        value: "{{ smtp_pass }}"
+        desc: "smtp_pass: {{ smtp_pass }}"
+
+      - name: adm_portainer_pass
+        value: "{{ adm_portainer_pass }}"
+        desc: "adm_portainer_pass: {{ adm_portainer_pass }}"
+
+      - name: wso2_integrator_pass
+        value: "{{ wso2_integrator_pass }}"
+        desc: "wso2_integrator_pass: {{ wso2_integrator_pass }}"
+
+      - name: internal_cidr
+        value: "{{ internal_cidr }}"
+        desc: "internal_cidr: {{ internal_cidr }}"
+
+      - name: teste_cidr
+        value: "{{ teste_cidr }}"
+        desc: "teste_cidr: {{ teste_cidr }}"
+
+      - name: sql_server_host
+        value: "{{ sql_server_host }}"
+        desc: "sql_server_host: {{ sql_server_host }}"

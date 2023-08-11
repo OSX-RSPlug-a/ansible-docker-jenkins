@@ -1,0 +1,15 @@
+- name: config wso2
+  gather_facts: No
+  hosts: wso2
+  tasks:
+    - name: Download WSO2 Repository
+      shell: wget --user-agent="testuser" --referer="http://connect.wso2.com/wso2/getform/reg/new_product_download" http://dist.wso2.org/products/api-manager/2.1.0/wso2am-2.1.0.zip -P /var/teste
+
+    - name: Unzip repository WSO2
+      shell: unzip /var/teste/wso2am-2.1.0.zip -d /var/teste
+
+    - name: Delete zip repository WSO2
+      shell: rm -f /var/teste/wso2am-2.1.0.zip
+
+    - name: Rename WSO2 repository
+      shell: mv /var/teste/wso2am-2.1.0 /var/teste/wso2

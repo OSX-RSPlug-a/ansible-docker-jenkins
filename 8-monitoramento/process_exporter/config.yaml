@@ -1,0 +1,23 @@
+process_names:
+  - name: "{{.ExeBase}}"
+    exe:
+      - administrative_application
+      - app_clean_old_boots
+      - app_status_sinacor
+      - broker_tester
+      - app_daily_cleanup
+      - broker_client
+      - teste_drop_copy0
+      - administrative_server
+      - app_monitor_orders_charging
+      - broker_client_42
+      - simple_order_matcher
+      - app_check_info
+      - app_send_emails_info
+      - broker_client_42_acceptor
+      - sysvr4_queue_manager
+  - name: "{{.ExeBase}}:{{.Matches.config_name}}"
+    exe:
+      - administrative_client
+    cmdline:
+      - '[-/\.\w ]+?conf/(?P<config_name>\w+).xml'

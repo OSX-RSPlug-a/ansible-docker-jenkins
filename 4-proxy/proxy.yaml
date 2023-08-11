@@ -1,0 +1,27 @@
+- name: Proxy
+  gather_facts: No
+  hosts: manager
+
+  tasks:     
+    - name: Proxy folder
+      shell: mkdir -p /var/teste/proxy
+
+    - name: Repository Proxy
+      copy:
+        src: ./files/
+        dest: /var/teste/proxy
+
+    - name: Replace WSO2 Ip
+      replace:
+        path: /var/teste/proxy/routes.yml
+        regexp: '(WSO2_IP)'
+        replace: "{{ wso2_ip }}"
+      
+    - name: Replace WSO2 Domain
+      replace:
+        path: /var/teste/proxy/routes.yml
+        regexp: '(WSO2_DOMAIN)'
+        replace: "{{ wso2_domain }}"
+
+    - name: Proxy Docker Compose
+      shell: docker stack deploy -c /var/teste/proxy/docker-compose.yaml traefik

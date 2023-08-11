@@ -1,0 +1,138 @@
+- name: launch metric exporters in the WSO2 Host
+  gather_facts: No
+  hosts: wso2
+
+  tasks:
+    - name: Copy filebeat.tmp config file
+      copy:
+        src: /var/teste/wso2/stacks/elk/filebeat/config/filebeat.tmp.yml
+        dest: /var/teste/wso2/stacks/elk/filebeat/config/filebeat.yml
+        backup: yes
+      become: yes
+
+    - name: inject values into filebeat config file
+      replace:
+        path: /var/teste/wso2/stacks/elk/filebeat/config/filebeat.yml
+        regexp: '{{ item.regexp }}'
+        replace: '{{ item.replace }}'
+      with_items:
+        - regexp: '\$\{ELASTICSEARCH_HOST\}'
+          replace: "elasticsearch"
+        - regexp: '\$\{KIBANA_HOST\}'
+          replace: "kibana"
+        - regexp: '\$\{ELASTICSEARCH_USERNAME\}'
+          replace: "elastic"
+        - regexp: '\$\{BUILD_ID\}'
+          replace: "1"
+        - regexp: '\$\{ELK_INDEX_PREFIX\}'
+          replace: "{{ elk_prefix_rollover_alias }}"
+        - regexp: '\$\{DOMAIN\}'
+          replace: "{{ domain }}"
+        - regexp: '\$\{ELASTICSEARCH_PASSWORD\}'
+          replace: "{{ elk_password }}"
+      become: yes
+
+    - name: inject Environment values into ELK docker-compose
+      replace:
+        path: /var/teste/wso2/stacks/elk/docker-compose.yml
+        regexp: '{{ item.regexp }}'
+        replace: '{{ item.replace }}'
+      with_items:
+        - regexp: '\$\{ELASTICSEARCH_HOST\}'
+          replace: "elasticsearch"
+        - regexp: '\$\{KIBANA_HOST\}'
+          replace: "kibana"
+        - regexp: '\$\{ELASTICSEARCH_USERNAME\}'
+          replace: "elastic"
+        - regexp: '\$\{BUILD_ID\}'
+          replace: "1"
+        - regexp: '\$\{ELASTICSEARCH_PASSWORD\}'
+          replace: "{{ elk_password }}"
+        - regexp: '\$\{ENVIRONMENT\}'
+          replace: "{{ environment_name }}"
+        - regexp: '\$\{DOMAIN\}'
+          replace: "{{ domain }}"
+        - regexp: '\$\{PROXY_IP\}'
+          replace: "{{ proxy_ip }}"
+      become: yes
+
+    - name: Remove deployed exporters
+      shell: docker stack rm {{ item }}
+      with_items:
+        -  elk
+        - monitoring_stack
+
+    - name: Redeploy of metric exporter stacks
+      shell: docker stack deploy -c /var/teste/wso2/stacks/{{ item }}/docker-compose.yml {{ item }}
+      with_items:
+        - elk
+        - monitoring_stack
+
+    - name: Create java library directory
+      file:
+        path: /usr/share/java/
+        state: directory
+      become: yes
+
+    - name: Download do JMX exporter
+      get_url:
+        url: https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.15.0/jmx_prometheus_javaagent-0.15.0.jar
+        dest: /usr/share/java/jmx_prometheus_javaagent-0.15.0.jar
+      become: yes
+
+    - name: Create JXM config directory
+      file:
+        path: /etc/jmx_exporter/
+        state: directory
+      become: yes
+
+    - name: copy JMX Exporter config file
+      copy:
+        src: ./jmx_exporter/config.yaml
+        dest: /etc/jmx_exporter/config.yaml
+      become: yes
+
+    - name: set Java Environment Variables
+      copy:
+        src: files/{{ item }}
+        dest: /etc/profile.d/{{ item }}
+      with_items:
+        - java-tool-options.sh
+        - jdk.sh
+      become: yes
+
+    - name: Get java current version on Host
+      shell: basename /usr/java/jdk*
+      register: host_jdk_version
+
+    - name: inject java version into JAVA_HOME
+      replace:
+        path: /etc/profile.d/jdk.sh
+        regexp: '\$\{JDK_VERSION\}'
+        replace: '{{ host_jdk_version.stdout }}'
+      become: yes
+
+    - name: load Java Environment Variables
+      shell: . /etc/profile.d/{{ item }}
+      with_items:
+        - java-tool-options.sh
+        - jdk.sh
+      become: yes
+
+    - name: Stop service wso2, if started
+      service:
+        name: wso2
+        state: stopped
+      become: yes
+
+    - name: Copy WSO2 Service to System
+      shell: cp -r /var/teste/wso2/wso2.service /etc/systemd/system/
+      become: yes
+
+    - name: Start WSO2 service
+      systemd:
+        daemon_reload: yes
+        enabled: yes
+        name: wso2
+        state: started
+      become: yes

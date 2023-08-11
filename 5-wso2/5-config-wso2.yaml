@@ -1,0 +1,67 @@
+- name: config wso2
+  gather_facts: No
+  hosts: wso2
+  tasks:
+    - include: ../config-repo/config-repo.yaml
+    - include: ../utils/wso2-conf-dir.yaml
+
+    - name: stop wso2
+      shell: service wso2 stop
+      become: true
+      ignore_errors: yes
+
+    - name: Replace user-mgt.xml
+      replace:
+        path: '{{ item.path }}'
+        regexp: '(adminpass)'
+        replace: "{{ wso2_admin_pass }}"
+      with_items:
+        - path: /var/teste/wso2_config/repository/conf/user-mgt.xml
+        - path: /var/teste/wso2_config/repository/conf/log4j.properties
+        - path: /var/teste/wso2_config/repository/conf/jndi.properties
+
+    - name: Replace wso2.sh
+      replace:
+        path: /var/teste/wso2_config/bin/wso2.sh
+        regexp: '{{ item.regexp }}'
+        replace: '{{ item.replace }}'
+      with_items:
+        - regexp: '(domainenv)'
+          replace: "{{ domain }}"
+        - regexp: '(mgntenv)'
+          replace: "{{ wso2_domain }}"
+        - regexp: '(passenv)'
+          replace: "{{ wso2_admin_pass }}"
+
+    - name: Replace Admin site.json
+      replace:
+        path: '{{ item.path }}'
+        regexp: '\$\{MANAGEMENT_DOMAIN\}'
+        replace: "{{ wso2_domain }}"
+      with_items:
+        - path: /var/teste/wso2_config/repository/deployment/server/jaggeryapps/admin/site/conf/site.json
+        - path: /var/teste/wso2_config/repository/deployment/server/jaggeryapps/store/site/conf/site.json
+        - path: /var/teste/wso2_config/repository/deployment/server/jaggeryapps/publisher/site/conf/site.json
+
+    - name: Permition wso2service
+      shell: chmod +x /var/teste/wso2_config/bin/wso2*.sh
+      become: true
+
+    - name: Sed in wso2.sh
+      shell: sed -i 's/\r//g' /var/teste/wso2_config/bin/wso2.sh
+
+    - name: Copy files to WSO2
+      shell: cp -r /var/teste/wso2_config/* /var/teste/wso2
+
+
+    - name: Copy WSO2 Service to System
+      shell: cp -r /var/teste/wso2/wso2.service /etc/systemd/system/
+      become: true
+
+    - name: enable wso2
+      shell: systemctl enable wso2
+      become: true
+
+    - name: start wso2
+      shell: service wso2 start
+      become: true

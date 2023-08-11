@@ -1,0 +1,41 @@
+- name: Remove Jenkins
+  gather_facts: No
+  hosts: manager
+
+  tasks:
+    - name: remove stack
+      shell: docker stack rm jenkins
+
+    - name: remove volume
+      shell: rm -rf /var/teste/volumes/jenkins
+      become: true
+      
+    - name: remove files
+      shell: rm -rf /var/teste/jenkins
+      become: true
+
+    - name: Remove Jenkins User with Secret
+      shell: docker secret rm jenkins-user
+      ignore_errors: True
+
+    - name: Remove Jenkins Pass with Secret
+      shell: docker secret rm jenkins-pass
+      ignore_errors: True
+
+    - name: Remove Jenkins Repo User with Secret
+      shell: docker secret rm repo_user
+      ignore_errors: True
+
+    - name: Remove Jenkins Repo Pass with Secret
+      shell: docker secret rm repo_pass
+      ignore_errors: True
+
+
+- name: Remove Jenkins on nodes
+  gather_facts: No
+  hosts: cluster
+
+  tasks:
+    - name: Jenkins NFS Volume
+      shell: docker volume rm jenkins-home
+      ignore_errors: True

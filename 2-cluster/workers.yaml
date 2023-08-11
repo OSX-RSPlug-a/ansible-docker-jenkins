@@ -1,0 +1,15 @@
+- name: config workers
+  gather_facts: No
+  hosts: worker
+
+  tasks:
+    - name: Get docker swarm worker token
+      shell: docker swarm join-token -q worker
+      changed_when: False
+      register: worker_token
+      delegate_to: manager
+
+    - include: ../utils/manager-ip.yaml
+    - name: Join worker
+      shell: docker swarm join --token {{ worker_token.stdout }} {{ manager_ip.stdout }}:2377
+      changed_when: False

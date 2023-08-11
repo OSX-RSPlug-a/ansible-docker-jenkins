@@ -1,0 +1,83 @@
+filebeat.inputs:
+  - type: container
+    paths:
+    - /var/lib/docker/containers/*/*.log
+    processors:
+    - add_docker_metadata:
+        host: unix:///var/run/docker.sock
+    - script:
+        lang: javascript
+        id: missing_message_fields
+        when:
+          not:
+            has_fields: [message]
+        source: >
+          function process(event) {
+            event.Put("message", event.Get("log"))
+          }
+    - script:
+        lang: javascript
+        id: missing_level_fields
+        when:
+          not:
+            has_fields: [level]
+        source: >
+          function process(event) {
+              var level = event.Get("stream") == "stderr" ? "error" : "info"
+              event.Put("level", level)
+          }
+    ignore_older: 480h
+
+  - type: log
+    paths:
+    - /var/teste/wso2/repository/logs/*.log
+    multiline.type: pattern
+    multiline.pattern: '^[[:space:]]+(at|\.{3})[[:space:]]+\b|^Caused by:'
+    multiline.negate: false
+    multiline.match: after
+    ignore_older: 480h
+
+processors:
+- decode_json_fields:
+    fields: [message]
+    target: ""
+    overwrite_keys: true
+- rename:
+    fields:
+    - from: container.labels.com_docker_stack_namespace
+      to: Nome do Servico
+    - from: package
+      to: Nome do Servico
+    - from: metadata.track_id
+      to: trackId
+    - from: metadata.leap_request
+      to: leap
+    - from: level
+      to: LEVEL
+    fail_on_error: false
+
+output.elasticsearch:
+  hosts: ["${DOMAIN}:443"]
+  protocol: https
+  path: "/${ELASTICSEARCH_HOST}"
+  username: ${ELASTICSEARCH_USERNAME}
+  password: ${ELASTICSEARCH_PASSWORD}
+
+setup.kibana:
+  host: "${DOMAIN}:443"
+  protocol: https
+  path: "/${KIBANA_HOST}"
+  username: ${ELASTICSEARCH_USERNAME}
+  password: ${ELASTICSEARCH_PASSWORD}
+
+setup.ilm:
+  enabled: auto
+  rollover_alias: ${ELK_INDEX_PREFIX}-filebeat
+  pattern: "{now/d}-000001"
+  policy_name: deletePolicy
+  policy_file: /usr/share/filebeat/policy/delete_policy.json
+  check_exists: true
+  overwrite: false
+
+logging.json: true
+logging.metrics.enabled: false

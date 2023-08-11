@@ -1,0 +1,5 @@
+- name: Get ssh user
+  command: whoami
+  changed_when: false
+  become: false
+  register: whoami

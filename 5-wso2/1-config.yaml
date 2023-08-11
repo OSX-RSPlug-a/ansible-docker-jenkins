@@ -1,0 +1,42 @@
+- name: config wso2
+  gather_facts: No
+  hosts: wso2
+
+  tasks:
+    - include: ../utils/get-ip.yaml
+    - include: ../utils/manager-ip.yaml
+    
+    - name: Replace Hosts
+      blockinfile:
+        path: /etc/hosts
+        block: |
+          {{ item.ip }} {{ item.name }}
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+      with_items:
+        - { ip: "{{ ip.stdout }}", name: mysql }
+        - { ip: "{{ ip.stdout }}", name: redis }
+        - { ip: "{{ manager_ip.stdout }}", name: whoami }
+        - { ip: "{{ manager_ip.stdout }}", name: address_api }
+        - { ip: "{{ manager_ip.stdout }}", name: attorney_api }
+        - { ip: "{{ manager_ip.stdout }}", name: bank_api }
+        - { ip: "{{ manager_ip.stdout }}", name: client_api }
+        - { ip: "{{ manager_ip.stdout }}", name: contract_api }
+        - { ip: "{{ manager_ip.stdout }}", name: data_engine_api }
+        - { ip: "{{ manager_ip.stdout }}", name: document_api }
+        - { ip: "{{ manager_ip.stdout }}", name: file_storage_api }
+        - { ip: "{{ manager_ip.stdout }}", name: patrimony_api }
+        - { ip: "{{ manager_ip.stdout }}", name: pending_api }
+        - { ip: "{{ manager_ip.stdout }}", name: person_api }
+        - { ip: "{{ manager_ip.stdout }}", name: step_control_api }
+        - { ip: "{{ manager_ip.stdout }}", name: suitability_api }
+        - { ip: "{{ manager_ip.stdout }}", name: user_integrator_api }
+        - { ip: "{{ manager_ip.stdout }}", name: workflow_api }
+        - { ip: "{{ manager_ip.stdout }}", name: advisor_api }
+        - { ip: "{{ manager_ip.stdout }}", name: email_api }
+        - { ip: "{{ manager_ip.stdout }}", name: user_identity_api }
+        - { ip: "{{ manager_ip.stdout }}", name: wso2ei }
+        - { ip: "{{ manager_ip.stdout }}", name: parameters_api }
+        - { ip: "{{ manager_ip.stdout }}", name: business_api }
+        - { ip: "{{ manager_ip.stdout }}", name: "{{ domain }}" }
+        - { ip: "{{ manager_ip.stdout }}", name: "{{ wso2_domain }}" }
+      become: true

@@ -1,0 +1,16 @@
+[Unit]
+Description=Filebeat sends log files to Logstash or directly to Elasticsearch.
+Documentation=https://www.elastic.co/products/beats/filebeat
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+
+Environment="BEAT_LOG_OPTS=-e"
+Environment="BEAT_CONFIG_OPTS=-c /etc/filebeat/${SERVICE}/filebeat.yml"
+Environment="BEAT_PATH_OPTS=-path.home /usr/share/filebeat/${SERVICE} -path.config /etc/filebeat/${SERVICE} -path.data /var/lib/filebeat/${SERVICE} -path.logs /var/log/filebeat/${SERVICE}"
+ExecStart=/usr/share/filebeat/bin/filebeat $BEAT_LOG_OPTS $BEAT_CONFIG_OPTS $BEAT_PATH_OPTS
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

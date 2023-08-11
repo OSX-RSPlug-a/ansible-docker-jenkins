@@ -1,0 +1,96 @@
+- name: Configure cluster
+  gather_facts: No
+  hosts: cluster
+
+  tasks:
+    - include: ../utils/whoami.yaml
+    - include: ../utils/get-ip.yaml
+
+    - name: Permission on Docker Sock
+      shell: "usermod -aG docker {{ whoami.stdout }}"
+      become: true
+
+    - name: Disable firewalld
+      shell: systemctl disable firewalld
+      ignore_errors: yes
+      become: true
+
+    - name: Stop firewalld
+      shell: systemctl stop firewalld
+      ignore_errors: yes
+      become: true
+
+    - name: Disable NetworkManager
+      shell: systemctl disable NetworkManager
+      ignore_errors: yes
+      become: true
+
+    - name: Stop NetworkManager
+      shell: systemctl stop NetworkManager
+      ignore_errors: yes
+      become: true
+
+    - name: Get Hostname
+      shell: hostname
+      register: hostname
+
+    - name: Replace Hosts
+      blockinfile:
+        marker: "# {mark} ANSIBLE MANAGED BLOCK host ip"
+        path: /etc/hosts
+        block: |
+          {{ ip.stdout }} {{ hostname.stdout }}
+      become: true
+
+    - name: Create path dockerd service
+      shell: mkdir /etc/systemd/system/docker.service.d
+      ignore_errors: yes
+      become: true
+
+    - name: Config Dockerd Service
+      copy:
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://{{ ip.stdout }}
+        dest: /etc/systemd/system/docker.service.d/docker.conf
+      become: true
+
+
+    - name: Config Docker Daemon
+      copy:
+        content: |
+          {
+            "dns": {{docker_dns}},
+            "metrics-addr" : "0.0.0.0:9323",
+            "experimental" : true
+          }
+        dest: /etc/docker/daemon.json
+      become: true
+
+    - name: Stop docker
+      shell: systemctl stop docker
+      become: true
+
+    - name: Start docker
+      shell: systemctl start docker
+      become: true
+
+    - name: Enable docker
+      shell: systemctl enable docker
+      become: true
+
+    - name: Ensure a job that runs "10 * * * * yes | docker system prune -a"
+      cron:
+        name: "docker system prune"
+        minute: "10"
+        job: "yes | docker system prune -f"
+      become: true
+
+    - name: teste dir
+      shell: mkdir -p /var/teste
+      become: true
+
+    - name: chown teste
+      shell: chown -R {{ whoami.stdout }} /var/teste
+      become: true

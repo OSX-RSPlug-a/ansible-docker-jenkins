@@ -1,0 +1,30 @@
+- name: config wso2 db
+  gather_facts: No
+  hosts: wso2
+  tasks:
+    - include: ../config-repo/config-repo.yaml
+    - include: ../utils/wso2-conf-dir.yaml
+    
+    - name: Run Busybox mkdir
+      shell: mkdir /var/teste/volumes/{{ environment_name }}-mysql-data
+      delegate_to: manager
+      ignore_errors: True
+
+    - name: MySQL NFS Volume
+      shell: docker volume create --driver local --opt type=nfs --opt o=addr={{ proxy_ip }},rw,vers=4 --opt device=:/{{ environment_name }}-mysql-data {{ environment_name }}-mysql-data
+      ignore_errors: True
+
+    - name: Replace NFS docker-compose
+      replace:
+        path: /var/teste/wso2_config/docker-compose.yml
+        regexp: '(IPNFS)'
+        replace: "{{ proxy_ip }}"
+
+    - name: Replace Environment docker-compose
+      replace:
+        path: /var/teste/wso2_config/docker-compose.yml
+        regexp: '(VOLUME)'
+        replace: "{{ environment_name }}-mysql-data"
+
+    - name: MySQL/Redis Docker Compose
+      shell: docker stack deploy -c /var/teste/wso2_config/docker-compose.yml apim
